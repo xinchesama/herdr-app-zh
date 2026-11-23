@@ -3,6 +3,9 @@
 **非官方**的 [herdr-app](https://github.com/herdrdev/herdr-app) 简体中文界面层。
 An unofficial Simplified Chinese interface layer for herdr-app.
 
+![test](https://github.com/xinchesama/herdr-app-zh/actions/workflows/test.yml/badge.svg)
+
+
 ![设置页](docs/screenshot-settings.png)
 
 > 非官方项目，与 Herdr 团队无关；不包含、不分发 herdr-app 的源码或二进制。
