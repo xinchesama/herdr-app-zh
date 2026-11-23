@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Linux: systemd --user unit.
+# 1. Adjust the path below to where you cloned this repo.
+# 2. cp scripts/herdr-zh.service ~/.config/systemd/user/
+# 3. systemctl --user daemon-reload
+# 4. systemctl --user enable --now herdr-zh.service
+
+[Unit]
+Description=herdr-app Chinese interface watcher
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/herdr-app-zh/src/zh_watch.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

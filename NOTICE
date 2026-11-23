@@ -1,0 +1,13 @@
+herdr-app-zh
+Copyright 2026 herdr-app-zh contributors
+
+This project is an unofficial translation layer for herdr-app. It does not
+include, bundle, or redistribute herdr-app source code or binaries.
+
+The English interface strings translated by this project originate from
+herdr-app (https://github.com/herdrdev/herdr-app), Copyright the herdr-app
+authors, licensed under the Apache License, Version 2.0.
+
+"Herdr" and "herdr-app" are used descriptively to identify the application this
+project works with. This project is not affiliated with, endorsed by, or
+sponsored by the Herdr project.

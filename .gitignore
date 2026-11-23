@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local state: never publish a user's herdr config or upstream files
+backup/
+*.log
+zh-watch.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
