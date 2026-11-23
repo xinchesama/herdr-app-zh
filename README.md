@@ -18,6 +18,7 @@ herdr-app 的界面由配置目录里的 JavaScript 模块描述（`mods/`、`fr
 - 不 fork 源码，不改 exe，不打补丁。
 - 只动界面文案，不碰命令 ID、路径、代码和模板表达式。
 - 设置页、命令面板、侧边栏、标签页、菜单、文件/变更/机器面板、反馈页等均已覆盖。
+- 连应用按固定名字打开的 `peek`、`toast`、`confirm`、`prompt` 也覆盖——这是克隆布局类方案通常翻不到的部分。
 - 在 herdr-app **0.1.16** 上验证：32 个文件、534 处文案；除品牌/字体/按键等白名单外，残留英文 0。
 
 ## 为什么需要
@@ -103,13 +104,14 @@ launchctl load -w ~/Library/LaunchAgents/io.github.herdr-app-zh.plist
 3. `apply_zh.py` 写文件；`zh_watch.py` 每秒用 `(mtime, size)` 缓存扫描，发现被 Herdr 重置成就重新写。
 4. `installed.json` 的指纹机制绕不过（基准来自 exe），本项目不碰它。
 
-细节见 [docs/how-it-works.md](docs/how-it-works.md)，当前覆盖见 [docs/coverage.md](docs/coverage.md)。
+细节见 [docs/how-it-works.md](docs/how-it-works.md)，当前覆盖见 [docs/coverage.md](docs/coverage.md)，同类项目与四条技术路线见 [docs/alternatives.md](docs/alternatives.md)。
 
 ## 已知限制
 
 - 启动瞬间仍有约 1 秒英文窗口（守护扫描间隔）；无法完全消除。
 - `win98` 复古演示布局未汉化；What's New 的发布说明正文保留英文。
 - 品牌名（Herdr）、字体名（JetBrains Mono/Geist）、按键名（Esc/Alt/Ctrl）、Git 状态码、月份缩写保留英文。
+- macOS 原生菜单、少数由主程序直接绘制的弹窗/错误信息改不到（配置层边界）；要覆盖这些只能改应用二进制并重签名，见 [docs/alternatives.md](docs/alternatives.md)。
 - 这是配置层覆盖，不是源码级 i18n；Herdr 升级后可能新增英文，跑 `audit_zh.py` 补词条即可。
 
 ## Herdr 更新之后
