@@ -131,6 +131,7 @@ python src/audit_zh.py --write
 欢迎补词条、修翻译、适配新版本。提交前请跑：
 
 ```sh
+python -m unittest discover -s tests -v
 python src/verify_zh.py
 python src/audit_zh.py
 ```
