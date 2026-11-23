@@ -109,6 +109,8 @@ launchctl load -w ~/Library/LaunchAgents/io.github.herdr-app-zh.plist
 ## 已知限制
 
 - 启动瞬间仍有约 1 秒英文窗口（守护扫描间隔）；无法完全消除。
+- 快捷键页的动作名与分组、命令面板的少数动态项（方向词、`Layout:`/`Theme:`、10 个未命名命令）仍为英文：它们是运行时由命令 ID 拼接的，字面量词典覆盖不到。
+- `docs/coverage.md` 的 0 残留只统计源码里的字符串字面量，不含上述运行时文本。
 - `win98` 复古演示布局未汉化；What's New 的发布说明正文保留英文。
 - 品牌名（Herdr）、字体名（JetBrains Mono/Geist）、按键名（Esc/Alt/Ctrl）、Git 状态码、月份缩写保留英文。
 - macOS 原生菜单、少数由主程序直接绘制的弹窗/错误信息改不到（配置层边界）；要覆盖这些只能改应用二进制并重签名，见 [docs/alternatives.md](docs/alternatives.md)。
