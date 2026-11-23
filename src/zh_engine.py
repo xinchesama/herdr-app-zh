@@ -309,11 +309,30 @@ def translate_template(raw_content, table, words):
     return "".join(out) if changed else None
 
 
+_PROTECT_RE = re.compile(r"/\* zh:protect \*/.*?/\* /zh:protect \*/", re.S)
+
+
+def protected_spans(src):
+    """补丁注入的代码块：标记之间整段不翻译（英文键名也是字典会命中的词）。"""
+    return [(m.start(), m.end()) for m in _PROTECT_RE.finditer(src)]
+
+
+def _inside(pos, spans):
+    for a, b in spans:
+        if a <= pos < b:
+            return True
+    return False
+
+
 def translate_js(src, table, words=None):
     words = words or {}
+    spans = protected_spans(src)
     out = []
     changed = 0
     for tok in tokenize(src):
+        if spans and _inside(tok.start, spans):
+            out.append(tok.raw)
+            continue
         if tok.kind == "str":
             quote = tok.raw[0]
             content = unescape(tok.content)
@@ -335,7 +354,10 @@ def translate_js(src, table, words=None):
 def ui_literals(src):
     """审计用：挑出像界面文案的字符串字面量（含模板静态片段）。"""
     found = []
+    spans = protected_spans(src)
     for tok in tokenize(src):
+        if spans and _inside(tok.start, spans):
+            continue
         if tok.kind == "str":
             text = unescape(tok.content)
             if is_ui_text(text):

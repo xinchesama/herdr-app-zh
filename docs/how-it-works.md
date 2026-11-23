@@ -41,11 +41,41 @@ home 的查找顺序：`HERDR_APP_HOME` → `$XDG_CONFIG_HOME/herdr-app` → `~/
 
 `src/zh_dict.py`：
 
-- `EXACT`：整串映射，约 480 条，覆盖设置页、命令面板、欢迎页、反馈、worktree、添加机器、变更、空间、文件、菜单、选择器。
+- `EXACT`：整串映射，约 440 条，覆盖设置页、命令面板、欢迎页、反馈、worktree、添加机器、变更、空间、文件、菜单、选择器。
 - `TEMPLATE_WORDS`：只作用于模板静态片段，例如 `agents → 个智能体`，让 `` `${n} agents` `` 变成 `n 个智能体`。
 - 不翻译：品牌（Herdr）、字体名、按键名、Git 状态码（HEAD/AA/DD）、月份缩写、shell 命令，以及代码里用于判断的错误串（如 `cannot start sh: program not found`）。
 
-## 5. 守护进程
+## 5. 代码补丁层
+
+有些文案不是字面量，而是运行时拼出来的：
+
+```js
+// mods/help/main.js —— 快捷键页
+const words = name.replace(/[._]/g, " ");      // space.select:1 → "space select 1"
+return arg ? `${words} ${arg}` : words;
+
+// frame/palette/main.js —— 命令面板
+title: `${verb.replace(/_/g, " ")} ${noun}`    // terminal.search → "Search terminal"
+```
+
+词典和审计都只看字面量，够不到这类文本，只能改代码。`src/zh_patches.py` 的做法：
+
+- 每条补丁是 `{file, note, old, new}`，`old` 逐字符匹配上游原文；
+- 匹配次数不对就抛 `PatchError`，`apply_zh.py` 直接失败退出——上游改版时立刻暴露，不会留下半英文界面；
+- 补丁注入的代码块包在 `/* zh:protect */ … /* /zh:protect */` 之间，词法器整段跳过，否则 `{ Recent: "最近" }` 里的英文键名会被词典翻掉，映射就断了；
+- 行尾无关：锚点按 LF 写，CRLF 文件自动换算；
+- 幂等：每条补丁带 `mark`，增量模式下一次运行发现痕迹已在就跳过。
+
+当前 10 条（0.1.16）：
+
+| 文件 | 补什么 |
+|---|---|
+| `mods/help/main.js` | 6 个分组标题；`LABELS` 命令名表（含方向词、`send:` 控制字符）；分区后缀 `（终端）`；过滤器同时匹配英文 ID |
+| `frame/palette/main.js` | 分组名映射、方向词（`聚焦窗格 左`）、主题名（`主题：石墨`）、布局名（`布局：默认`）、10 个动态命令的标题 |
+
+`audit_zh.py` 会在 `docs/coverage.md` 末尾报告 `N/N applied`，未生效的条目单独列出。
+
+## 6. 守护进程
 
 `src/zh_watch.py`：
 
@@ -57,14 +87,14 @@ home 的查找顺序：`HERDR_APP_HOME` → `$XDG_CONFIG_HOME/herdr-app` → `~/
 
 启动瞬间仍有一个扫描间隔的英文窗口（默认 1 秒）；把 `HERDR_ZH_INTERVAL` 调到 0.3 可以缩短，但更费 CPU。
 
-## 6. 验收
+## 7. 验收
 
 - `python src/verify_zh.py`：对每个 mod 跑 `herdr-app check`（加载并渲染一次），对每个 frame 文件跑 `node --check`。
-- `python src/audit_zh.py`：扫描仍显示英文的界面文案，白名单（品牌/字体/按键/命令）与 `win98` 演示布局除外。
+- `python src/audit_zh.py`：扫描仍显示英文的界面文案，白名单（品牌/字体/按键/命令）与 `win98` 演示布局除外；末尾附代码补丁生效情况。
 
-在 0.1.16 上：32 个文件、534 处文案；mods 21/21、frame 7/7 通过；白名单外残留 0。
+在 0.1.16 上：32 个文件、531 处文案 + 10 条代码补丁；mods 21/21、frame 7/7 通过；白名单外残留 0。
 
-## 7. 边界
+## 8. 边界
 
 - 不是源码级 i18n，无法做到"重启后仍持久"；本质是持续重新应用。
 - Herdr 升级会带来新文案，需要补词条后重新 `--rebuild`。

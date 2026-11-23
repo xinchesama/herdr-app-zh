@@ -13,13 +13,20 @@ An unofficial Simplified Chinese interface layer for herdr-app.
 
 ## 它做了什么
 
-herdr-app 的界面由配置目录里的 JavaScript 模块描述（`mods/`、`frame/`）。这个项目维护一份英→中词典，只替换这些 JS 里的**字符串字面量**，再用一个极轻的守护进程在应用启动后重新应用。
+herdr-app 的界面由配置目录里的 JavaScript 模块描述（`mods/`、`frame/`）。这个项目分两层改写这些 JS：
 
-- 不 fork 源码，不改 exe，不打补丁。
-- 只动界面文案，不碰命令 ID、路径、代码和模板表达式。
+1. **词典层**：JS 词法器只替换**字符串字面量**，模板里的 `${...}` 原样保留。
+2. **代码补丁层**：字典够不到的运行时拼接文案（快捷键页的命令名、命令面板的方向词/主题/布局前缀、10 个动态命令）用精确文本补丁改代码。
+
+- 不 fork 源码，不改 exe。
+- 只动界面文案，不碰命令 ID、路径和代码逻辑（补丁除外，见下）。
 - 设置页、命令面板、侧边栏、标签页、菜单、文件/变更/机器面板、反馈页等均已覆盖。
 - 连应用按固定名字打开的 `peek`、`toast`、`confirm`、`prompt` 也覆盖——这是克隆布局类方案通常翻不到的部分。
-- 在 herdr-app **0.1.16** 上验证：32 个文件、534 处文案；除品牌/字体/按键等白名单外，残留英文 0。
+- 在 herdr-app **0.1.16** 上验证：32 个文件、531 处文案 + 10 条代码补丁；除品牌/字体/按键等白名单外，残留英文 0。
+
+| 快捷键页 | 命令面板 |
+|---|---|
+| ![快捷键](docs/screenshot-keybinds.png) | ![命令面板](docs/screenshot-palette.png) |
 
 ## 为什么需要
 
@@ -101,16 +108,17 @@ launchctl load -w ~/Library/LaunchAgents/io.github.herdr-app-zh.plist
 
 1. `zh_engine.py` 是一个够用的 JS 词法器：识别注释、字符串、模板、正则，**只改字符串字面量**。
 2. 普通字符串整串匹配 `zh_dict.py` 的 `EXACT`；模板按 `${...}` 切段，只翻静态片段，表达式原样保留并递归处理。
-3. `apply_zh.py` 写文件；`zh_watch.py` 每秒用 `(mtime, size)` 缓存扫描，发现被 Herdr 重置成就重新写。
-4. `installed.json` 的指纹机制绕不过（基准来自 exe），本项目不碰它。
+3. `zh_patches.py` 处理运行时拼接的文案：每条补丁是精确的「原文 → 中文」，锚点找不到就报错（上游改版立刻暴露）；注入的代码块包在 `/* zh:protect */` 之间，词法器会跳过，避免误翻英文键名。
+4. `apply_zh.py` 写文件；`zh_watch.py` 每秒用 `(mtime, size)` 缓存扫描，发现被 Herdr 重置成就重新写。
+5. `installed.json` 的指纹机制绕不过（基准来自 exe），本项目不碰它。
 
 细节见 [docs/how-it-works.md](docs/how-it-works.md)，当前覆盖见 [docs/coverage.md](docs/coverage.md)，同类项目与四条技术路线见 [docs/alternatives.md](docs/alternatives.md)。
 
 ## 已知限制
 
 - 启动瞬间仍有约 1 秒英文窗口（守护扫描间隔）；无法完全消除。
-- 快捷键页的动作名与分组、命令面板的少数动态项（方向词、`Layout:`/`Theme:`、10 个未命名命令）仍为英文：它们是运行时由命令 ID 拼接的，字面量词典覆盖不到。
-- `docs/coverage.md` 的 0 残留只统计源码里的字符串字面量，不含上述运行时文本。
+- 快捷键页与命令面板靠代码补丁覆盖：**Herdr 新增命令时**，新命令会先显示英文（拼出来的），补一行 `zh_patches.py` 即可。
+- 补丁锚点绑定上游 0.1.16 的原文；上游改版后 `apply_zh.py` 会明确报错而不是留下半英文界面，按提示更新锚点即可。
 - `win98` 复古演示布局未汉化；What's New 的发布说明正文保留英文。
 - 品牌名（Herdr）、字体名（JetBrains Mono/Geist）、按键名（Esc/Alt/Ctrl）、Git 状态码、月份缩写保留英文。
 - macOS 原生菜单、少数由主程序直接绘制的弹窗/错误信息改不到（配置层边界）；要覆盖这些只能改应用二进制并重签名，见 [docs/alternatives.md](docs/alternatives.md)。
@@ -125,6 +133,8 @@ python src/audit_zh.py --write
 ```
 
 `audit_zh.py` 列出的新文案，按整串加进 `src/zh_dict.py` 的 `EXACT`；带变量的加进 `TEMPLATE_WORDS`。
+
+如果 `apply_zh.py` 报 `补丁失败` / `patch failed`，说明上游改了被补丁的代码：按报错里的文件名与 note 更新 `src/zh_patches.py` 的 `old` 锚点。`docs/coverage.md` 末尾的 **Code patches** 段会列出没生效的条目。
 
 ## 卸载
 

@@ -21,6 +21,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from zh_dict import EXACT, TEMPLATE_WORDS
 from zh_engine import translate_js
+from zh_patches import patch_source, PatchError
 
 REPO = os.path.dirname(HERE)
 
@@ -67,6 +68,7 @@ def run(rebuild=False, dry_run=False):
 
     changed = []
     total = 0
+    patches = 0
     for area in (MODS, FRAME):
         if not os.path.isdir(area):
             continue
@@ -78,19 +80,26 @@ def run(rebuild=False, dry_run=False):
             except UnicodeDecodeError:
                 print(f"skip (not UTF-8): {rel}")
                 continue
+            try:
+                txt, npatch = patch_source(rel, txt)
+            except PatchError as e:
+                print(f"patch failed: {e}")
+                return 2
             out, n = translate_js(txt, EXACT, TEMPLATE_WORDS)
             total += n
+            patches += npatch
             if out == txt:
                 continue
-            changed.append((rel, n, origin))
+            changed.append((rel, n, npatch, origin))
             if not dry_run:
                 with open(path, "w", encoding="utf-8", newline="") as f:
                     f.write(out)
 
     verb = "would translate" if dry_run else "translated"
-    print(f"{verb} {len(changed)} files, {total} strings")
-    for rel, n, origin in changed:
-        print(f"  {n:3d}  {rel}  ({origin})")
+    print(f"{verb} {len(changed)} files, {total} strings, {patches} code patches")
+    for rel, n, npatch, origin in changed:
+        extra = f", {npatch} patch(es)" if npatch else ""
+        print(f"  {n:3d}  {rel}{extra}  ({origin})")
     return 0
 
 

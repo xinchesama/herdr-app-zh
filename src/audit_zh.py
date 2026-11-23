@@ -16,7 +16,8 @@ import collections
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from zh_engine import ui_literals
-from apply_zh import REPO, MODS, FRAME
+from zh_patches import PATCHES
+from apply_zh import REPO, MODS, FRAME, APP
 
 DOC = os.path.join(REPO, "docs", "coverage.md")
 
@@ -39,6 +40,22 @@ def looks_like_ui(text):
     if t.startswith("$") or ("/" in t and " " not in t):
         return False
     return True
+
+
+def patch_status():
+    """(file, note, applied?) for every code patch, read from the live files."""
+    rows = []
+    for p in PATCHES:
+        path = os.path.join(APP, p["file"])
+        try:
+            with open(path, encoding="utf-8") as f:
+                src = f.read()
+        except (OSError, UnicodeDecodeError):
+            rows.append((p["file"], p["note"], False))
+            continue
+        ok = p["new"] in src or bool(p.get("mark") and p["mark"] in src)
+        rows.append((p["file"], p["note"], ok))
+    return rows
 
 
 def collect(include_win98=False):
@@ -72,7 +89,9 @@ def main():
     lines = ["# Coverage\n",
              "Strings still shown in English after applying `zh_dict.py`, excluding",
              "brands, font and key names, git codes, months, and shell commands.",
-             "The `win98` demo layout is skipped by default.\n",
+             "The `win98` demo layout is skipped by default.",
+             "This counts **source string literals**; text built at runtime is handled",
+             "by the code patches listed at the end.\n",
              f"**{sum(len(v) for v in per.values())} occurrences / {len(total)} unique**, in {len(per)} files.\n",
              "\n## By file\n"]
     if per:
@@ -86,6 +105,17 @@ def main():
             lines.append(f"- {c} x `{s}`")
     else:
         lines.append("None.")
+    rows = patch_status()
+    missing_patch = [r for r in rows if not r[2]]
+    lines.append("\n## Code patches\n")
+    lines.append(f"{len(rows) - len(missing_patch)}/{len(rows)} applied.")
+    if missing_patch:
+        lines.append("")
+        for rel, note, _ in missing_patch:
+            lines.append(f"- NOT applied: `{rel}` — {note}")
+        lines.append("")
+        lines.append("Run `python src/apply_zh.py` (and update `zh_patches.py` if the")
+        lines.append("anchor is gone after an upstream update).")
     text = "\n".join(lines) + "\n"
     print(text)
     if "--write" in sys.argv:
